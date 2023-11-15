@@ -25,11 +25,14 @@ class GAMEPLAYMATHPROJECT_API AEnemy : public ACharacter
 {
 	GENERATED_BODY()
 
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UHealthComponent> HealthComponent;
+	UFUNCTION()
+	void Die();
 
 public:
 	AEnemy();
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "/Script/GameplayMathProject.EPlayerRelativeToEnemyFlags"))
 	int32 PlayerRelativeToEnemyFlags;
@@ -39,5 +42,4 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaSeconds) override;
 };

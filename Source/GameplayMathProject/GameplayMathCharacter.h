@@ -11,6 +11,7 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 class AEnemy;
+class UHealthComponent;
 
 UENUM(BlueprintType)
 enum EAttackType
@@ -35,6 +36,8 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 	TObjectPtr<USpringArmComponent> CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 	//Input
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -80,6 +83,10 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAttack OnAttack;
+
+	//Health
+	UPROPERTY(EditAnywhere)
+	float DamageAmount = 25.f;
 
 	//Helper functions
 	float DotProduct2D(FVector2D V1, FVector2D V2);

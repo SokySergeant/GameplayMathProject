@@ -15,8 +15,15 @@ class GAMEPLAYMATHPROJECT_API UHealthComponent : public UActorComponent
 
 	UPROPERTY(EditAnywhere)
 	float MaxHealth = 100.f;
+	UPROPERTY(EditAnywhere)
+	float CurrentHealthSmoothingValue = 0.5f;
 	UPROPERTY(VisibleAnywhere)
-	float CurrentHealth = 0.f;
+	float CurrentHealth = 100.f;
+	UPROPERTY(VisibleAnywhere)
+	float TargetHealth = 0.f;
+
+	//Functions
+	float GetSmoothedValue(float CurrentVal, float TargetVal, float Speed);
 
 public:
 	UHealthComponent();
@@ -27,6 +34,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
 	UFUNCTION(BlueprintCallable)

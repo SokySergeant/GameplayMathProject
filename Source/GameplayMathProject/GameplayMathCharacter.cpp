@@ -6,6 +6,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "HealthComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 AGameplayMathCharacter::AGameplayMathCharacter()
@@ -39,19 +40,14 @@ AGameplayMathCharacter::AGameplayMathCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	//Health component
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
 }
 
 void AGameplayMathCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	//Get all enemies
-	TArray<TObjectPtr<AActor>> EnemyActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemy::StaticClass(), EnemyActors);
-	for(TObjectPtr<AActor> EnemyActor : EnemyActors)
-	{
-		Enemies.Add(Cast<AEnemy>(EnemyActor));
-	}
 	
 	//Input setup
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -66,67 +62,6 @@ void AGameplayMathCharacter::BeginPlay()
 void AGameplayMathCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	//Check flags
-	for (int i = 0; i < Enemies.Num(); i++)
-	{
-		if(!Enemies[i])
-		{
-			Enemies.RemoveAt(i);
-			continue;
-		}
-		
-		FVector VectorFromPlayerToEnemy = Enemies[i]->GetActorLocation() - GetActorLocation();
-	
-		int32 TempFlags = 0;
-
-		//Check if player is above or below or same plane
-		float VerticalDist = GetActorLocation().Z - Enemies[i]->GetActorLocation().Z;
-		if(VerticalDist < -HeightThresholdAboveBelow)
-		{
-			TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Below);
-		}else if(VerticalDist > HeightThresholdAboveBelow)
-		{
-			TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Above);
-		}else
-		{
-			TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::SamePlane);
-		}
-
-		//Check if player is ahead or behind
-		FVector2D ConstrainedDirToEnemy = FVector2D(VectorFromPlayerToEnemy.X,VectorFromPlayerToEnemy.Y).GetSafeNormal();
-		FVector2D ConstrainedEnemyForward = FVector2D(Enemies[i]->GetActorForwardVector().X, Enemies[i]->GetActorForwardVector().Y).GetSafeNormal();
-		if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyForward) < 0)
-		{
-			TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Ahead);
-		}else
-		{
-			TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Behind);
-		}
-
-		//Check if player is left or right
-		FVector2D ConstrainedEnemyRight = FVector2D(Enemies[i]->GetActorRightVector().X, Enemies[i]->GetActorRightVector().Y).GetSafeNormal();
-		if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyRight) < -LeftRightAngle)
-		{
-			TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Right);
-		}else if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyRight) > LeftRightAngle)
-		{
-			TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Left);
-		}
-
-		//Check if enemy sees player
-
-		//Check if player sees enemy
-		FVector2D ConstrainedPlayerForward = FVector2D(GetActorForwardVector().X, GetActorForwardVector().Y).GetSafeNormal();
-		if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedPlayerForward) > PlayerFOVValue)
-		{
-			TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::IsSeenByPlayer);
-		}
-
-		//Update flags in enemy
-		Enemies[i]->PlayerRelativeToEnemyFlags = 0;
-		Enemies[i]->PlayerRelativeToEnemyFlags = TempFlags;
-	} 
 }
 
 #pragma region INPUT  
@@ -166,6 +101,15 @@ void AGameplayMathCharacter::Look(const FInputActionValue& Value)
 
 void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 {
+	//Get all enemies
+	TArray<TObjectPtr<AActor>> EnemyActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemy::StaticClass(), EnemyActors);
+	Enemies.Empty();
+	for(TObjectPtr<AActor> EnemyActor : EnemyActors)
+	{
+		Enemies.Add(Cast<AEnemy>(EnemyActor));
+	}
+	
 	//Find closest enemy
 	TObjectPtr<AEnemy> ClosestEnemy;
 	float ClosestDistance = 10000.f;
@@ -184,6 +128,56 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 
 	if(!bCanAttack) return;
 	bCanAttack = false;
+
+	//Check flags
+	FVector VectorFromPlayerToEnemy = ClosestEnemy->GetActorLocation() - GetActorLocation();
+
+	int32 TempFlags = 0;
+
+	//Check if player is above or below or same plane
+	float VerticalDist = GetActorLocation().Z - ClosestEnemy->GetActorLocation().Z;
+	if(VerticalDist < -HeightThresholdAboveBelow)
+	{
+		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Below);
+	}else if(VerticalDist > HeightThresholdAboveBelow)
+	{
+		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Above);
+	}else
+	{
+		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::SamePlane);
+	}
+
+	//Check if player is ahead or behind
+	FVector2D ConstrainedDirToEnemy = FVector2D(VectorFromPlayerToEnemy.X,VectorFromPlayerToEnemy.Y).GetSafeNormal();
+	FVector2D ConstrainedEnemyForward = FVector2D(ClosestEnemy->GetActorForwardVector().X, ClosestEnemy->GetActorForwardVector().Y).GetSafeNormal();
+	if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyForward) < 0)
+	{
+		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Ahead);
+	}else
+	{
+		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Behind);
+	}
+
+	//Check if player is left or right
+	FVector2D ConstrainedEnemyRight = FVector2D(ClosestEnemy->GetActorRightVector().X, ClosestEnemy->GetActorRightVector().Y).GetSafeNormal();
+	if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyRight) < -LeftRightAngle)
+	{
+		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Right);
+	}else if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyRight) > LeftRightAngle)
+	{
+		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Left);
+	}
+
+	//Check if player sees enemy
+	FVector2D ConstrainedPlayerForward = FVector2D(GetActorForwardVector().X, GetActorForwardVector().Y).GetSafeNormal();
+	if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedPlayerForward) > PlayerFOVValue)
+	{
+		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::IsSeenByPlayer);
+	}
+
+	//Update flags in enemy
+	ClosestEnemy->PlayerRelativeToEnemyFlags = 0;
+	ClosestEnemy->PlayerRelativeToEnemyFlags = TempFlags;
 	
 	//Check closest enemy flags
 	//Above attack
@@ -199,6 +193,8 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Above);
+		//Damage enemy
+		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -215,6 +211,8 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Below);
+		//Damage enemy
+		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -231,6 +229,8 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Left);
+		//Damage enemy
+		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -247,6 +247,8 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Right);
+		//Damage enemy
+		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -263,6 +265,8 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Ahead);
+		//Damage enemy
+		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -279,6 +283,8 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Behind);
+		//Damage enemy
+		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 }
