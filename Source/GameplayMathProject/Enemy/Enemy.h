@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "Enemy.generated.h"
 
+class UCollisionComponent;
 class UHealthComponent;
 
 UENUM(BlueprintType, Meta = (Bitflags))
@@ -25,14 +26,13 @@ class GAMEPLAYMATHPROJECT_API AEnemy : public ACharacter
 {
 	GENERATED_BODY()
 
-	UFUNCTION()
-	void Die();
-
 public:
 	AEnemy();
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UHealthComponent> HealthComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UCollisionComponent> CollisionComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "/Script/GameplayMathProject.EPlayerRelativeToEnemyFlags"))
 	int32 PlayerRelativeToEnemyFlags;

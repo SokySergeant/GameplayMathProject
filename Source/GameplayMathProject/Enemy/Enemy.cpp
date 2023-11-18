@@ -1,13 +1,14 @@
 ﻿#include "Enemy.h"
-#include "HealthComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "GameplayMathProject/Components/CollisionComponent.h"
+#include "GameplayMathProject/Components/HealthComponent.h"
 
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
-	HealthComponent->OnDeath.AddDynamic(this, &AEnemy::Die);
+	CollisionComponent = CreateDefaultSubobject<UCollisionComponent>(TEXT("Collider"));
 	
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 }
@@ -15,9 +16,4 @@ AEnemy::AEnemy()
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-}
-
-void AEnemy::Die()
-{
-	Destroy();
 }

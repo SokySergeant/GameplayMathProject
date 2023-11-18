@@ -5,6 +5,7 @@
 #include "InputActionValue.h"
 #include "GameplayMathCharacter.generated.h"
 
+class UCollisionComponent;
 enum class EPlayerRelativeToEnemyFlags;
 class USpringArmComponent;
 class UCameraComponent;
@@ -38,6 +39,8 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 	TObjectPtr<UCameraComponent> FollowCamera;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UHealthComponent> HealthComponent;
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UCollisionComponent> CollisionComponent;
 
 	//Input
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -50,6 +53,10 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 	TObjectPtr<UInputAction> JumpAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> AttackAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> PickupAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ThrowAction;
 
 	//Enemy flag math
 	UPROPERTY(VisibleAnywhere)
@@ -62,8 +69,6 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 	float LeftRightAngle = 0.7f;
 
 	//Attack
-	UPROPERTY(EditAnywhere)
-	float AttackRange = 200.f;
 	bool bCanAttack = true;
 	UFUNCTION(BlueprintCallable)
 	void FinishAttack();
@@ -84,13 +89,19 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 	UPROPERTY(BlueprintAssignable)
 	FOnAttack OnAttack;
 
+	//Picking up and throwing
+	UPROPERTY(EditAnywhere)
+	float HoldDistanceInFrontOfPlayer = 100.f;
+	UPROPERTY()
+	TObjectPtr<AActor> PickedUpActor;
+	UPROPERTY()
+	TObjectPtr<UCollisionComponent> PickedUpCollisionComp;
+	UPROPERTY(EditAnywhere)
+	float ThrowPower = 1000.f;
+
 	//Health
 	UPROPERTY(EditAnywhere)
 	float DamageAmount = 25.f;
-
-	//Helper functions
-	float DotProduct2D(FVector2D V1, FVector2D V2);
-	bool CheckBit(AEnemy* Enemy, EPlayerRelativeToEnemyFlags Flag);
 
 public:
 	AGameplayMathCharacter();
@@ -105,4 +116,6 @@ public:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Attack(const FInputActionValue& Value);
+	void Pickup(const FInputActionValue& Value);
+	void Throw(const FInputActionValue& Value);
 };

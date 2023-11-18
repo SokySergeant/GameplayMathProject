@@ -1,13 +1,15 @@
 #include "GameplayMathCharacter.h"
-#include "Enemy.h"
+#include "Enemy/Enemy.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "HealthComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "HelperFunctions.h"
+#include "Pickup.h"
+#include "Components/CollisionComponent.h"
+#include "Components/HealthComponent.h"
 
 AGameplayMathCharacter::AGameplayMathCharacter()
 {
@@ -43,6 +45,9 @@ AGameplayMathCharacter::AGameplayMathCharacter()
 
 	//Health component
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
+
+	//Collision component
+	CollisionComponent = CreateDefaultSubobject<UCollisionComponent>(TEXT("Collider"));
 }
 
 void AGameplayMathCharacter::BeginPlay()
@@ -72,9 +77,14 @@ void AGameplayMathCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGameplayMathCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGameplayMathCharacter::Look);
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AGameplayMathCharacter::Attack);
+		
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AGameplayMathCharacter::Attack);
+
+		EnhancedInputComponent->BindAction(PickupAction, ETriggerEvent::Started, this, &AGameplayMathCharacter::Pickup);
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started, this, &AGameplayMathCharacter::Throw);
 	}
 }
 
@@ -99,36 +109,27 @@ void AGameplayMathCharacter::Look(const FInputActionValue& Value)
 	AddControllerPitchInput(-LookAxisVector.Y);
 }
 
+#pragma endregion
+
+#pragma region ATTACKING
+
 void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 {
-	//Get all enemies
-	TArray<TObjectPtr<AActor>> EnemyActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemy::StaticClass(), EnemyActors);
-	Enemies.Empty();
-	for(TObjectPtr<AActor> EnemyActor : EnemyActors)
-	{
-		Enemies.Add(Cast<AEnemy>(EnemyActor));
-	}
-	
-	//Find closest enemy
-	TObjectPtr<AEnemy> ClosestEnemy;
-	float ClosestDistance = 10000.f;
-	for (TObjectPtr<AEnemy> Enemy : Enemies)
-	{
-		float TempDist = FVector::Distance(GetActorLocation(), Enemy->GetActorLocation());
-		if(TempDist < ClosestDistance)
-		{
-			ClosestDistance = TempDist;
-			ClosestEnemy = Enemy;
-		}
-	}
-
-	//Don't continue if closest enemy is too far away
-	if(ClosestDistance > AttackRange) return;
-
 	if(!bCanAttack) return;
 	bCanAttack = false;
+	
+	TObjectPtr<AEnemy> ClosestEnemy;
 
+	//Get an enemy within my collider
+	for(UCollisionComponent* Comp : CollisionComponent->CollidingComps)
+	{
+		if(Comp->GetOwner()->IsA(AEnemy::StaticClass())) 
+		{
+			ClosestEnemy = Cast<AEnemy>(Comp->GetOwner());
+			break;
+		}
+	}
+	
 	//Check flags
 	FVector VectorFromPlayerToEnemy = ClosestEnemy->GetActorLocation() - GetActorLocation();
 
@@ -150,7 +151,7 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	//Check if player is ahead or behind
 	FVector2D ConstrainedDirToEnemy = FVector2D(VectorFromPlayerToEnemy.X,VectorFromPlayerToEnemy.Y).GetSafeNormal();
 	FVector2D ConstrainedEnemyForward = FVector2D(ClosestEnemy->GetActorForwardVector().X, ClosestEnemy->GetActorForwardVector().Y).GetSafeNormal();
-	if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyForward) < 0)
+	if(UHelperFunctions::DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyForward) < 0)
 	{
 		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Ahead);
 	}else
@@ -160,17 +161,17 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 
 	//Check if player is left or right
 	FVector2D ConstrainedEnemyRight = FVector2D(ClosestEnemy->GetActorRightVector().X, ClosestEnemy->GetActorRightVector().Y).GetSafeNormal();
-	if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyRight) < -LeftRightAngle)
+	if(UHelperFunctions::DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyRight) < -LeftRightAngle)
 	{
 		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Right);
-	}else if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyRight) > LeftRightAngle)
+	}else if(UHelperFunctions::DotProduct2D(ConstrainedDirToEnemy, ConstrainedEnemyRight) > LeftRightAngle)
 	{
 		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::Left);
 	}
 
 	//Check if player sees enemy
 	FVector2D ConstrainedPlayerForward = FVector2D(GetActorForwardVector().X, GetActorForwardVector().Y).GetSafeNormal();
-	if(DotProduct2D(ConstrainedDirToEnemy, ConstrainedPlayerForward) > PlayerFOVValue)
+	if(UHelperFunctions::DotProduct2D(ConstrainedDirToEnemy, ConstrainedPlayerForward) > PlayerFOVValue)
 	{
 		TempFlags |= 1 << static_cast<int32>(EPlayerRelativeToEnemyFlags::IsSeenByPlayer);
 	}
@@ -184,7 +185,7 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	bool CanAttack = true;
 	for (EPlayerRelativeToEnemyFlags AttackFlag : AboveAttackFlags)
 	{
-		if(!CheckBit(ClosestEnemy, AttackFlag))
+		if(!UHelperFunctions::CheckBit(ClosestEnemy, AttackFlag))
 		{
 			CanAttack = false;
 			break;
@@ -202,7 +203,7 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	CanAttack = true;
 	for (EPlayerRelativeToEnemyFlags AttackFlag : BelowAttackFlags)
 	{
-		if(!CheckBit(ClosestEnemy, AttackFlag))
+		if(!UHelperFunctions::CheckBit(ClosestEnemy, AttackFlag))
 		{
 			CanAttack = false;
 			break;
@@ -220,7 +221,7 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	CanAttack = true;
 	for (EPlayerRelativeToEnemyFlags AttackFlag : LeftAttackFlags)
 	{
-		if(!CheckBit(ClosestEnemy, AttackFlag))
+		if(!UHelperFunctions::CheckBit(ClosestEnemy, AttackFlag))
 		{
 			CanAttack = false;
 			break;
@@ -238,7 +239,7 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	CanAttack = true;
 	for (EPlayerRelativeToEnemyFlags AttackFlag : RightAttackFlags)
 	{
-		if(!CheckBit(ClosestEnemy, AttackFlag))
+		if(!UHelperFunctions::CheckBit(ClosestEnemy, AttackFlag))
 		{
 			CanAttack = false;
 			break;
@@ -256,7 +257,7 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	CanAttack = true;
 	for (EPlayerRelativeToEnemyFlags AttackFlag : AheadAttackFlags)
 	{
-		if(!CheckBit(ClosestEnemy, AttackFlag))
+		if(!UHelperFunctions::CheckBit(ClosestEnemy, AttackFlag))
 		{
 			CanAttack = false;
 			break;
@@ -274,7 +275,7 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	CanAttack = true;
 	for (EPlayerRelativeToEnemyFlags AttackFlag : BehindAttackFlags)
 	{
-		if(!CheckBit(ClosestEnemy, AttackFlag))
+		if(!UHelperFunctions::CheckBit(ClosestEnemy, AttackFlag))
 		{
 			CanAttack = false;
 			break;
@@ -289,23 +290,52 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	}
 }
 
-#pragma endregion
-
 void AGameplayMathCharacter::FinishAttack()
 {
 	bCanAttack = true;
 }
 
-#pragma region HELPERFUNCTIONS
+#pragma endregion
 
-float AGameplayMathCharacter::DotProduct2D(FVector2D V1, FVector2D V2)
+#pragma region THROWING
+
+void AGameplayMathCharacter::Pickup(const FInputActionValue& Value)
 {
-	return V1.X * V2.X + V1.Y * V2.Y;
+	if(!bCanAttack) return;
+	if(PickedUpActor) return; //Already holding something
+	if(CollisionComponent->CollidingComps.Num() == 0) return; //No actors with collision nearby
+
+	for(UCollisionComponent* Comp : CollisionComponent->CollidingComps)
+	{
+		if(Comp->GetOwner()->IsA(APickup::StaticClass())) //Found a pickup within collider
+		{
+			PickedUpCollisionComp = Comp;
+			PickedUpActor = Comp->GetOwner();
+			
+			//Attach picked up actor to this
+			PickedUpCollisionComp->SimulatePhysics = false;
+			PickedUpActor->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
+			PickedUpActor->SetActorRelativeLocation(FVector(HoldDistanceInFrontOfPlayer,0.f,0.f));
+
+			break;
+		}
+	}
 }
 
-bool AGameplayMathCharacter::CheckBit(AEnemy* Enemy, EPlayerRelativeToEnemyFlags Flag)
+void AGameplayMathCharacter::Throw(const FInputActionValue& Value)
 {
-	return Enemy->PlayerRelativeToEnemyFlags & 1 << static_cast<int32>(Flag);
+	if(!bCanAttack) return;
+	if(!PickedUpActor) return; //Isn't holding anything
+
+	//Detach picked up actor and throw
+	PickedUpActor->DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepWorld, false));
+	PickedUpCollisionComp->SimulatePhysics = true;
+	PickedUpCollisionComp->ResetForces();
+	PickedUpCollisionComp->AddForce(GetActorForwardVector() * ThrowPower);
+
+	//Release references
+	PickedUpActor = nullptr;
+	PickedUpCollisionComp = nullptr;
 }
 
 #pragma endregion

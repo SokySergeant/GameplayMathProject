@@ -17,6 +17,9 @@ class GAMEPLAYMATHPROJECT_API AEnemySpawner : public AActor
 	UFUNCTION()
 	void SpawnNewEnemy();
 
+	UPROPERTY()
+	TObjectPtr<AEnemy> Enemy;
+
 public:
 	AEnemySpawner();
 

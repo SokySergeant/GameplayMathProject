@@ -22,12 +22,12 @@ class GAMEPLAYMATHPROJECT_API UHealthComponent : public UActorComponent
 	UPROPERTY(VisibleAnywhere)
 	float TargetHealth = 0.f;
 
-	//Functions
-	float GetSmoothedValue(float CurrentVal, float TargetVal, float Speed);
-
 public:
 	UHealthComponent();
 
+	UFUNCTION()
+	void Setup();
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnDeathDelegate OnDeath;
 	void Die();
