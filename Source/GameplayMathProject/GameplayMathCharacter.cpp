@@ -116,11 +116,9 @@ void AGameplayMathCharacter::Look(const FInputActionValue& Value)
 void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 {
 	if(!bCanAttack) return;
-	bCanAttack = false;
 	
-	TObjectPtr<AEnemy> ClosestEnemy;
-
 	//Get an enemy within my collider
+	TObjectPtr<AEnemy> ClosestEnemy;
 	for(UCollisionComponent* Comp : CollisionComponent->CollidingComps)
 	{
 		if(Comp->GetOwner()->IsA(AEnemy::StaticClass())) 
@@ -129,6 +127,9 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 			break;
 		}
 	}
+	if(!ClosestEnemy) return; //Didn't find an enemy within my collider
+
+	bCanAttack = false;
 	
 	//Check flags
 	FVector VectorFromPlayerToEnemy = ClosestEnemy->GetActorLocation() - GetActorLocation();
@@ -194,8 +195,6 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Above);
-		//Damage enemy
-		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -212,8 +211,6 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Below);
-		//Damage enemy
-		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -230,8 +227,6 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Left);
-		//Damage enemy
-		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -248,8 +243,6 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Right);
-		//Damage enemy
-		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -266,8 +259,6 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Ahead);
-		//Damage enemy
-		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 
@@ -284,8 +275,6 @@ void AGameplayMathCharacter::Attack(const FInputActionValue& Value)
 	if(CanAttack) 
 	{
 		OnAttack.Broadcast(ClosestEnemy, EAttackType::Behind);
-		//Damage enemy
-		Cast<UHealthComponent>(ClosestEnemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
 		return;
 	}
 }
@@ -339,3 +328,8 @@ void AGameplayMathCharacter::Throw(const FInputActionValue& Value)
 }
 
 #pragma endregion
+
+void AGameplayMathCharacter::DamageEnemy(AEnemy* Enemy)
+{
+	Cast<UHealthComponent>(Enemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
+}

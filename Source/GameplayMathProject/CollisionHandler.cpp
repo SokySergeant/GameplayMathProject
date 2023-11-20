@@ -12,14 +12,22 @@ void ACollisionHandler::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//Get all collision components in scene
+	//Get all collision components in world
 	TArray<AActor*> Actors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), Actors);
 	for(TObjectPtr<AActor> Actor : Actors)
 	{
-		if(UCollisionComponent* CollisionComp = Cast<UCollisionComponent>(Actor->GetComponentByClass(UCollisionComponent::StaticClass())))
+		TArray<UActorComponent*> Comps;
+		Actor->GetComponents(UCollisionComponent::StaticClass(), Comps);
+		
+		if(Comps.Num() == 0) continue; //Actor has no components
+
+		for(UActorComponent* Comp : Comps)
 		{
-			CollisionComps.Add(CollisionComp);
+			if(UCollisionComponent* CollisionComp = Cast<UCollisionComponent>(Comp)) //If this component is a collision component
+			{
+				CollisionComps.Add(CollisionComp);
+			}
 		}
 	}
 }
@@ -53,8 +61,9 @@ void ACollisionHandler::DrawShapes()
 {
 	for(UCollisionComponent* Comp : CollisionComps)
 	{
+		//Draw shape
 		FColor Color = Comp->IsColliding() ? FColor::Red : FColor::Blue;
-		
+
 		switch (Comp->CollisionType)
 		{
 			case ECollisionType::Sphere:
@@ -66,6 +75,16 @@ void ACollisionHandler::DrawShapes()
 			
 			default:
 				break;
+		}
+
+		//Draw intersection points
+		for(UCollisionComponent* CollidingComp : Comp->CollidingComps)
+		{
+			FVector PointLoc = UHelperFunctions::GetIntersectionPoint(Comp, CollidingComp);
+			if(PointLoc != FVector(0,0,0))
+			{
+				DrawDebugPoint(GetWorld(), PointLoc, 30.f, FColor::Yellow);
+			}
 		}
 	}
 }

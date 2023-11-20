@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "Enemy/Enemy.h"
 #include "GameplayMathCharacter.generated.h"
 
 class UCollisionComponent;
@@ -98,14 +99,16 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 	TObjectPtr<UCollisionComponent> PickedUpCollisionComp;
 	UPROPERTY(EditAnywhere)
 	float ThrowPower = 1000.f;
-
-	//Health
-	UPROPERTY(EditAnywhere)
-	float DamageAmount = 25.f;
+	
 
 public:
 	AGameplayMathCharacter();
 
+	UPROPERTY(EditAnywhere)
+	float DamageAmount = 25.f;
+	UFUNCTION(BlueprintCallable)
+	void DamageEnemy(AEnemy* Enemy);
+	
 protected:
 	virtual void BeginPlay() override;
 

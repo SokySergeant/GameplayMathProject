@@ -57,6 +57,8 @@ public:
 	//Physics
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool SimulatePhysics = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ToolTip = "Whether this collider can affect other colliders with simulated physics on"))
+	bool AffectsPhysics = true;
 
 	UPROPERTY(EditAnywhere)
 	float GravityAmount = 9.81f;
@@ -70,7 +72,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	float ForceFalloff = 0.5f;
 	UPROPERTY(EditAnywhere)
-	float Bounciness = 0.5f;
+	float SidewaysBounciness = 100.f;
+	UPROPERTY(EditAnywhere)
+	float UpwardsBounciness = 1.f;
 	UPROPERTY(EditAnywhere)
 	float Deadzone = 1.f;
 	UPROPERTY(EditAnywhere)

@@ -19,27 +19,34 @@ void UCollisionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	//Simulate physics
 	if(!SimulatePhysics) return;
 	
-	//Gravity
+	//Gravity increment
 	CurrentGravityAmount -= GravityAmount * DeltaTime;
 	CurrentGravityAmount = FMath::Clamp(CurrentGravityAmount, -MaxGravity, 0.f);
 
 	//Bouncing off things
 	for(UCollisionComponent* Comp : CollidingComps)
 	{
-		//Collided with something underneath myself, reset gravity
+		if(!Comp->AffectsPhysics) continue; //Ignore this object if it shouldn't affect physics
+		
+		//Collided with something underneath self, reset gravity
 		if(Comp->ColliderLocation().Z < ColliderLocation().Z)
 		{
 			CurrentGravityAmount = 0.f;
 		}
 
-		//TODO Instead of direction from collider to self, it needs to be direction from intersection point to self
-		FVector DirToSelf = (ColliderLocation() - Comp->ColliderLocation()).GetSafeNormal();
-		AddForce(DirToSelf * Bounciness * DeltaTime);
+		//Bounce in opposite direction of where collision happened
+		FVector IntersectionPoint = UHelperFunctions::GetIntersectionPoint(this, Comp);
+		FVector DirToSelf = (ColliderLocation() - IntersectionPoint).GetSafeNormal();
+		float Dot = UHelperFunctions::DotProduct(DirToSelf, FVector(0,0,1));
 
+		//Different bounciness value if collided with a wall or a floor
+		AddForce(DirToSelf * (Dot > 0.2f ? UpwardsBounciness : SidewaysBounciness) * DeltaTime);
+			
+		//Add friction for each object being touched
 		ForceToApply = UHelperFunctions::GetSmoothedValue(ForceToApply, FVector(0,0,0), Friction * DeltaTime);
 	}
 
-	//Force deadzone
+	//Force deadzone (so that the object comes to rest at a more normal rate instead of micro bouncing for too long)
 	if(ForceToApply.Length() < Deadzone)
 	{
 		ForceToApply = FVector(0,0,0);

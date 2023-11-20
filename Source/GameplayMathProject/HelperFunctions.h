@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CollisionComponent.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "HelperFunctions.generated.h"
 
@@ -14,11 +15,14 @@ class GAMEPLAYMATHPROJECT_API UHelperFunctions : public UBlueprintFunctionLibrar
 	GENERATED_BODY()
 
 public:
+	static float DotProduct(FVector V1, FVector V2);
 	static float DotProduct2D(FVector2D V1, FVector2D V2);
+	
 	static float GetSmoothedValue(float CurrentVal, float TargetVal, float Speed);
 	static FVector GetSmoothedValue(FVector CurrentVal, FVector TargetVal, float Speed);
 	
 	static bool CheckBit(AEnemy* Enemy, EPlayerRelativeToEnemyFlags Flag);
 
 	static bool CheckIntersection(UCollisionComponent* Comp1, UCollisionComponent* Comp2);
+	static FVector GetIntersectionPoint(UCollisionComponent* Comp1, UCollisionComponent* Comp2);
 };
