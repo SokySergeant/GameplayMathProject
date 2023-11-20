@@ -17,3 +17,15 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 }
+
+void AEnemy::DamageEnemy(float Damage)
+{
+	HealthComponent->UpdateHealthBy(-Damage);
+}
+
+void AEnemy::DoVoiceline()
+{
+	float NoiseAmount = FMath::PerlinNoise1D(Seed);
+	UE_LOG(LogTemp, Warning, TEXT("%f"), NoiseAmount);
+}
+

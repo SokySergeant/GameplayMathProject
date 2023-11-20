@@ -16,6 +16,8 @@ void UCollisionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if(!Enabled) return;
+	
 	//Simulate physics
 	if(!SimulatePhysics) return;
 	
@@ -62,20 +64,21 @@ void UCollisionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 void UCollisionComponent::SetIsColliding(UCollisionComponent* OtherColComp, bool IsColliding)
 {
-	int AddedIndex = -1;
-	int RemovedAmount = -1;
-
+	if(!Enabled) return;
+	
+	TArray<UCollisionComponent*> RecordedCollisionComps = CollidingComps;
+ 
 	//Add or remove incoming component from array
 	if(IsColliding)
 	{
-		AddedIndex = CollidingComps.AddUnique(OtherColComp);
+		CollidingComps.AddUnique(OtherColComp);
 	}else
 	{
-		RemovedAmount = CollidingComps.Remove(OtherColComp);
+		CollidingComps.Remove(OtherColComp);
 	}
-
-	//Broadcast OnCollisionChanged if the incoming component was added or removed from the array
-	if(AddedIndex > 0 && RemovedAmount > 0)
+	
+	//Broadcast OnCollisionChanged if the colliding comp array was changed
+	if(RecordedCollisionComps != CollidingComps)
 	{
 		OnCollisionChanged.Broadcast(OtherColComp, IsColliding);
 	}

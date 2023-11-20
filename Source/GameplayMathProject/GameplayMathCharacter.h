@@ -104,10 +104,8 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 public:
 	AGameplayMathCharacter();
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DamageAmount = 25.f;
-	UFUNCTION(BlueprintCallable)
-	void DamageEnemy(AEnemy* Enemy);
 	
 protected:
 	virtual void BeginPlay() override;

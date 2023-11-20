@@ -39,6 +39,14 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	bool bShowDebug = false;
+	
+	UFUNCTION(BlueprintCallable)
+	void DamageEnemy(float Damage);
+
+	UPROPERTY(EditAnywhere)
+	float Seed = 0.f;
+	UFUNCTION(BlueprintCallable)
+	void DoVoiceline();
 
 protected:
 	virtual void BeginPlay() override;

@@ -55,6 +55,8 @@ public:
 	bool IsColliding() {return CollidingComps.Num() > 0;};
 
 	//Physics
+	UPROPERTY(EditAnywhere)
+	bool Enabled = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool SimulatePhysics = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ToolTip = "Whether this collider can affect other colliders with simulated physics on"))

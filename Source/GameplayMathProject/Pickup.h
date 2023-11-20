@@ -14,8 +14,11 @@ class GAMEPLAYMATHPROJECT_API APickup : public AActor
 public:
 	APickup();
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UCollisionComponent> CollisionComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Damage = 50.f;
 
 protected:
 	virtual void BeginPlay() override;

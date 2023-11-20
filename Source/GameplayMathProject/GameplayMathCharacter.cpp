@@ -302,7 +302,7 @@ void AGameplayMathCharacter::Pickup(const FInputActionValue& Value)
 			PickedUpActor = Comp->GetOwner();
 			
 			//Attach picked up actor to this
-			PickedUpCollisionComp->SimulatePhysics = false;
+			PickedUpCollisionComp->Enabled = false;
 			PickedUpActor->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::KeepWorld, false));
 			PickedUpActor->SetActorRelativeLocation(FVector(HoldDistanceInFrontOfPlayer,0.f,0.f));
 
@@ -318,7 +318,7 @@ void AGameplayMathCharacter::Throw(const FInputActionValue& Value)
 
 	//Detach picked up actor and throw
 	PickedUpActor->DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepWorld, false));
-	PickedUpCollisionComp->SimulatePhysics = true;
+	PickedUpCollisionComp->Enabled = true;
 	PickedUpCollisionComp->ResetForces();
 	PickedUpCollisionComp->AddForce(GetActorForwardVector() * ThrowPower);
 
@@ -328,8 +328,3 @@ void AGameplayMathCharacter::Throw(const FInputActionValue& Value)
 }
 
 #pragma endregion
-
-void AGameplayMathCharacter::DamageEnemy(AEnemy* Enemy)
-{
-	Cast<UHealthComponent>(Enemy->GetComponentByClass(UHealthComponent::StaticClass()))->UpdateHealthBy(-DamageAmount);
-}
