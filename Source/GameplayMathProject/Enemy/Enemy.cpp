@@ -1,7 +1,9 @@
 ﻿#include "Enemy.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameplayMathProject/Components/CollisionComponent.h"
 #include "GameplayMathProject/Components/HealthComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AEnemy::AEnemy()
 {
@@ -23,9 +25,26 @@ void AEnemy::DamageEnemy(float Damage)
 	HealthComponent->UpdateHealthBy(-Damage);
 }
 
-void AEnemy::DoVoiceline()
+void AEnemy::StartVoiceline()
 {
-	float NoiseAmount = FMath::PerlinNoise1D(Seed);
-	UE_LOG(LogTemp, Warning, TEXT("%f"), NoiseAmount);
+	CurrentTime = 0.f;
+
+	SpawnedAudioComponent = UGameplayStatics::SpawnSoundAttached(VoicelineSound, RootComponent);
+	Position = UGameplayStatics::GetTimeSeconds(GetWorld());
+	GetWorld()->GetTimerManager().SetTimer(VoicelineTimerHandle, this, &AEnemy::DoVoiceline, GetWorld()->GetDeltaSeconds(), true);
 }
 
+void AEnemy::DoVoiceline()
+{
+	CurrentTime += GetWorld()->GetTimerManager().GetTimerElapsed(VoicelineTimerHandle);
+	
+	Position += Frequency * GetWorld()->GetDeltaSeconds();
+	float Pitch = FMath::PerlinNoise1D(Position) + 1.f; // +1 to remap from -1,1 to 0,2
+	
+	SpawnedAudioComponent->SetPitchMultiplier(Pitch * Aplitude);
+
+	if(CurrentTime > AllowedTime)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(VoicelineTimerHandle);
+	}
+}

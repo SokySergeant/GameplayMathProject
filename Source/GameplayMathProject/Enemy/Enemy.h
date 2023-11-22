@@ -37,15 +37,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "/Script/GameplayMathProject.EPlayerRelativeToEnemyFlags"))
 	int32 PlayerRelativeToEnemyFlags;
 	
-	UPROPERTY(EditAnywhere)
-	bool bShowDebug = false;
-	
 	UFUNCTION(BlueprintCallable)
 	void DamageEnemy(float Damage);
 
+	//Voiceline
 	UPROPERTY(EditAnywhere)
-	float Seed = 0.f;
+	TObjectPtr<USoundBase> VoicelineSound;
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> SpawnedAudioComponent;
+	
+	UPROPERTY(EditAnywhere)
+	float Position;
+	UPROPERTY(EditAnywhere)
+	float Frequency = 1.f;
+	UPROPERTY(EditAnywhere)
+	float Aplitude = 1.f;
+
+	float CurrentTime = 0.f;
+	UPROPERTY(EditAnywhere)
+	float AllowedTime = 1.6f;
+	
 	UFUNCTION(BlueprintCallable)
+	void StartVoiceline();
+	FTimerHandle VoicelineTimerHandle;
 	void DoVoiceline();
 
 protected:
