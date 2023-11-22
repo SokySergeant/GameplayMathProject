@@ -10,6 +10,7 @@
 #include "Pickup.h"
 #include "Components/CollisionComponent.h"
 #include "Components/HealthComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AGameplayMathCharacter::AGameplayMathCharacter()
 {
@@ -85,6 +86,8 @@ void AGameplayMathCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 
 		EnhancedInputComponent->BindAction(PickupAction, ETriggerEvent::Started, this, &AGameplayMathCharacter::Pickup);
 		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started, this, &AGameplayMathCharacter::Throw);
+
+		EnhancedInputComponent->BindAction(QuitAction, ETriggerEvent::Started, this, &AGameplayMathCharacter::Quit);
 	}
 }
 
@@ -107,6 +110,11 @@ void AGameplayMathCharacter::Look(const FInputActionValue& Value)
 	
 	AddControllerYawInput(LookAxisVector.X);
 	AddControllerPitchInput(-LookAxisVector.Y);
+}
+
+void AGameplayMathCharacter::Quit(const FInputActionValue& Value)
+{
+	UKismetSystemLibrary::QuitGame(GetWorld(), UGameplayStatics::GetPlayerController(GetWorld(), 0), EQuitPreference::Quit, false);
 }
 
 #pragma endregion

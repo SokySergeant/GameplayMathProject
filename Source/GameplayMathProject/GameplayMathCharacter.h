@@ -58,6 +58,8 @@ class GAMEPLAYMATHPROJECT_API AGameplayMathCharacter : public ACharacter
 	TObjectPtr<UInputAction> PickupAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ThrowAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> QuitAction;
 
 	//Enemy flag math
 	UPROPERTY(VisibleAnywhere)
@@ -119,4 +121,5 @@ public:
 	void Attack(const FInputActionValue& Value);
 	void Pickup(const FInputActionValue& Value);
 	void Throw(const FInputActionValue& Value);
+	void Quit(const FInputActionValue& Value);
 };
